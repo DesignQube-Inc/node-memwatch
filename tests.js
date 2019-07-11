@@ -62,3 +62,23 @@ describe('improper HeapDiff allocation', function() {
     done();
   });
 });
+
+describe('HeapDiff', function() {
+  it('update should not throw', function(done) {
+    var hd = new memwatch.HeapDiff();
+    (function() { hd.update(); }).should.not.throw();
+    (function() { hd.compare(); }).should.not.throw();
+    (function() { hd.end(); }).should.not.throw();
+    done();
+  });
+});
+
+describe('HeapDiff', function() {
+  it('double compare should not throw', function(done) {
+    var hd = new memwatch.HeapDiff();
+    (function() { hd.compare(); }).should.not.throw();
+    (function() { hd.compare(); }).should.not.throw();
+    (function() { hd.end(); }).should.not.throw();
+    done();
+  });
+});
