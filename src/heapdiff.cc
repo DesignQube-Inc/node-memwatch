@@ -52,6 +52,7 @@ heapdiff::HeapDiff::Initialize ( v8::Handle<v8::Object> target )
     t->SetClassName(Nan::New<v8::String>("HeapDiff").ToLocalChecked());
 
     Nan::SetPrototypeMethod(t, "end", End);
+    Nan::SetPrototypeMethod(t, "update", Update);
 
     target->Set(Nan::New<v8::String>("HeapDiff").ToLocalChecked(), t->GetFunction());
 }
@@ -59,6 +60,10 @@ heapdiff::HeapDiff::Initialize ( v8::Handle<v8::Object> target )
 static int
 allocate (const v8::HeapSnapshot ** t)
 {
+    if (*t)
+    {
+        ((HeapSnapshot *) (*t))->Delete();
+    }
     s_inProgress = true;
 #if (NODE_MODULE_VERSION >= 0x002D)
     *t = v8::Isolate::GetCurrent()->GetHeapProfiler()->TakeHeapSnapshot(NULL);
@@ -339,4 +344,21 @@ NAN_METHOD(heapdiff::HeapDiff::End)
     t->after = NULL;
 
     info.GetReturnValue().Set(comparison);
+}
+
+NAN_METHOD(heapdiff::HeapDiff::Update)
+{
+    // take another snapshot and compare them
+    Nan::HandleScope scope;
+
+    HeapDiff *t = Unwrap<HeapDiff>( info.This() );
+
+    // How shall we deal with double .end()ing?  The only reasonable
+    // approach seems to be an exception, cause nothing else makes
+    // sense.
+    if (t->ended) {
+        return Nan::ThrowError("attempt to update() a HeapDiff that was already ended");
+    }
+
+    allocate(&(t->before));
 }
