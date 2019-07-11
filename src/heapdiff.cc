@@ -53,6 +53,7 @@ heapdiff::HeapDiff::Initialize ( v8::Handle<v8::Object> target )
 
     Nan::SetPrototypeMethod(t, "end", End);
     Nan::SetPrototypeMethod(t, "update", Update);
+    Nan::SetPrototypeMethod(t, "compare", Compare);
 
     target->Set(Nan::New<v8::String>("HeapDiff").ToLocalChecked(), t->GetFunction());
 }
@@ -361,4 +362,25 @@ NAN_METHOD(heapdiff::HeapDiff::Update)
     }
 
     allocate(&(t->before));
+}
+
+NAN_METHOD(heapdiff::HeapDiff::Compare)
+{
+    // take another snapshot and compare them
+    Nan::HandleScope scope;
+
+    HeapDiff *t = Unwrap<HeapDiff>( info.This() );
+
+    // How shall we deal with double .end()ing?  The only reasonable
+    // approach seems to be an exception, cause nothing else makes
+    // sense.
+    if (t->ended) {
+        return Nan::ThrowError("attempt to end() a HeapDiff that was already ended");
+    }
+
+    allocate(&(t->after));
+
+    v8::Local<Value> comparison = compare(t->before, t->after);
+
+    info.GetReturnValue().Set(comparison);
 }

@@ -20,6 +20,7 @@ namespace heapdiff
         static NAN_METHOD(New);
         static NAN_METHOD(End);
         static NAN_METHOD(Update);
+        static NAN_METHOD(Compare);
         static bool InProgress();
 
       protected:
