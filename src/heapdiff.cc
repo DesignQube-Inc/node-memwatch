@@ -72,20 +72,8 @@ NAN_METHOD(heapdiff::HeapDiff::New)
     self->Wrap(info.This());
 
     // take a snapshot and save a pointer to it
-    s_inProgress = true;
     s_startTime = time(NULL);
-
-#if (NODE_MODULE_VERSION >= 0x002D)
-    self->before = v8::Isolate::GetCurrent()->GetHeapProfiler()->TakeHeapSnapshot(NULL);
-#else
-#if (NODE_MODULE_VERSION > 0x000B)
-    self->before = v8::Isolate::GetCurrent()->GetHeapProfiler()->TakeHeapSnapshot(Nan::New<v8::String>("").ToLocalChecked(), NULL);
-#else
-    self->before = v8::HeapProfiler::TakeSnapshot(Nan::New<v8::String>("").ToLocalChecked(), HeapSnapshot::kFull, NULL);
-#endif
-#endif
-
-    s_inProgress = false;
+    allocate(self, false);
 
     info.GetReturnValue().Set(info.This());
 }
@@ -324,17 +312,7 @@ NAN_METHOD(heapdiff::HeapDiff::End)
     }
     t->ended = true;
 
-    s_inProgress = true;
-#if (NODE_MODULE_VERSION >= 0x002D)
-    t->after = v8::Isolate::GetCurrent()->GetHeapProfiler()->TakeHeapSnapshot(NULL);
-#else
-#if (NODE_MODULE_VERSION > 0x000B)
-    t->after = v8::Isolate::GetCurrent()->GetHeapProfiler()->TakeHeapSnapshot(Nan::New<v8::String>("").ToLocalChecked(), NULL);
-#else
-    t->after = v8::HeapProfiler::TakeSnapshot(Nan::New<v8::String>("").ToLocalChecked(), HeapSnapshot::kFull, NULL);
-#endif
-#endif
-    s_inProgress = false;
+    allocate(t, true);
 
     v8::Local<Value> comparison = compare(t->before, t->after);
     // free early, free often.  I mean, after all, this process we're in is
@@ -345,4 +323,27 @@ NAN_METHOD(heapdiff::HeapDiff::End)
     t->after = NULL;
 
     info.GetReturnValue().Set(comparison);
+}
+
+static int
+allocate (HeapDiff * t, bool isAfter)
+{
+    v8::HeapSnapshot *next;
+    s_inProgress = true;
+#if (NODE_MODULE_VERSION >= 0x002D)
+    next = v8::Isolate::GetCurrent()->GetHeapProfiler()->TakeHeapSnapshot(NULL);
+#else
+#if (NODE_MODULE_VERSION > 0x000B)
+    next = v8::Isolate::GetCurrent()->GetHeapProfiler()->TakeHeapSnapshot(Nan::New<v8::String>("").ToLocalChecked(), NULL);
+#else
+    next = v8::HeapProfiler::TakeSnapshot(Nan::New<v8::String>("").ToLocalChecked(), HeapSnapshot::kFull, NULL);
+#endif
+#endif
+    if (isAfter) {
+        t->after = next;
+    } else {
+        t->before = next;
+    }
+    s_inProgress = false;
+    return 0;
 }
