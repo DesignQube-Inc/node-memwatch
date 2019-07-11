@@ -56,6 +56,23 @@ heapdiff::HeapDiff::Initialize ( v8::Handle<v8::Object> target )
     target->Set(Nan::New<v8::String>("HeapDiff").ToLocalChecked(), t->GetFunction());
 }
 
+static int
+allocate (const v8::HeapSnapshot ** t)
+{
+    s_inProgress = true;
+#if (NODE_MODULE_VERSION >= 0x002D)
+    *t = v8::Isolate::GetCurrent()->GetHeapProfiler()->TakeHeapSnapshot(NULL);
+#else
+#if (NODE_MODULE_VERSION > 0x000B)
+    *t = v8::Isolate::GetCurrent()->GetHeapProfiler()->TakeHeapSnapshot(Nan::New<v8::String>("").ToLocalChecked(), NULL);
+#else
+    *t = v8::HeapProfiler::TakeSnapshot(Nan::New<v8::String>("").ToLocalChecked(), HeapSnapshot::kFull, NULL);
+#endif
+#endif
+    s_inProgress = false;
+    return 0;
+}
+
 NAN_METHOD(heapdiff::HeapDiff::New)
 {
     // Don't blow up when the caller says "new require('memwatch').HeapDiff()"
@@ -73,7 +90,7 @@ NAN_METHOD(heapdiff::HeapDiff::New)
 
     // take a snapshot and save a pointer to it
     s_startTime = time(NULL);
-    allocate(self, false);
+    allocate(&(self->before));
 
     info.GetReturnValue().Set(info.This());
 }
@@ -226,7 +243,6 @@ static Handle<Value> changesetToObject(changeset & changes)
     return scope.Escape(a);
 }
 
-
 static v8::Local<Value>
 compare(const v8::HeapSnapshot * before, const v8::HeapSnapshot * after)
 {
@@ -312,7 +328,7 @@ NAN_METHOD(heapdiff::HeapDiff::End)
     }
     t->ended = true;
 
-    allocate(t, true);
+    allocate(&(t->after));
 
     v8::Local<Value> comparison = compare(t->before, t->after);
     // free early, free often.  I mean, after all, this process we're in is
@@ -323,27 +339,4 @@ NAN_METHOD(heapdiff::HeapDiff::End)
     t->after = NULL;
 
     info.GetReturnValue().Set(comparison);
-}
-
-static int
-allocate (HeapDiff * t, bool isAfter)
-{
-    v8::HeapSnapshot *next;
-    s_inProgress = true;
-#if (NODE_MODULE_VERSION >= 0x002D)
-    next = v8::Isolate::GetCurrent()->GetHeapProfiler()->TakeHeapSnapshot(NULL);
-#else
-#if (NODE_MODULE_VERSION > 0x000B)
-    next = v8::Isolate::GetCurrent()->GetHeapProfiler()->TakeHeapSnapshot(Nan::New<v8::String>("").ToLocalChecked(), NULL);
-#else
-    next = v8::HeapProfiler::TakeSnapshot(Nan::New<v8::String>("").ToLocalChecked(), HeapSnapshot::kFull, NULL);
-#endif
-#endif
-    if (isAfter) {
-        t->after = next;
-    } else {
-        t->before = next;
-    }
-    s_inProgress = false;
-    return 0;
 }
