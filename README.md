@@ -11,12 +11,10 @@ Node.JS code.  It provides:
   two points in time, telling you what has been allocated, and what
   has been released.
 
-
 Installation
 ------------
 
-- `npm install @airbnb/node-memwatch`
-
+- `npm install @aidemaster/node-memwatch`
 
 Description
 -----------
@@ -29,7 +27,7 @@ instrumentation.  This module attempts to satisfy that need.
 To get started, import `node-memwatch` like so:
 
 ```javascript
-var memwatch = require('@airbnb/node-memwatch');
+var memwatch = require('@aidemaster/node-memwatch');
 ```
 
 ### Leak Detection
@@ -80,7 +78,6 @@ heavy load, it may defer this action for some time.  To aid in
 speedier debugging, `memwatch` provides a `gc()` method to force V8 to
 do a full GC and heap compaction.
 
-
 ### Heap Diffing
 
 For leak isolation, it provides a `HeapDiff` class that takes two snapshots and
@@ -90,9 +87,15 @@ computes a diff between them.  For example:
 // Take first snapshot
 var hd = new memwatch.HeapDiff();
 
+// Take the second snapshot and compute the diff
+var diff = hd.compare()
+
+// Update the base snapshot
+hd.update()
+
 // do some things ...
 
-// Take the second snapshot and compute the diff
+// compare() and destory
 var diff = hd.end();
 ```
 
@@ -127,12 +130,10 @@ You can use `HeapDiff` in your `on('stats')` callback; even though it
 takes a memory snapshot, which triggers a V8 GC, it will not trigger
 the `stats` event itself.  Because that would be silly.
 
-
 Future Work
 -----------
 
 Please see the Issues to share suggestions and contribute!
-
 
 License
 -------
