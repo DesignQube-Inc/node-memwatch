@@ -43,7 +43,7 @@ heapdiff::HeapDiff::~HeapDiff()
 }
 
 void
-heapdiff::HeapDiff::Initialize ( v8::Handle<v8::Object> target )
+heapdiff::HeapDiff::Initialize ( v8::Local<v8::Object> target )
 {
     Nan::HandleScope scope;
 
