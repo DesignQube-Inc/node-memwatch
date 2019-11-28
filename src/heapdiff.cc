@@ -46,7 +46,7 @@ void
 heapdiff::HeapDiff::Initialize ( v8::Local<v8::Object> target )
 {
     Nan::HandleScope scope;
-
+    v8::Local<v8::Context> context = target->CreationContext();
     v8::Local<v8::FunctionTemplate> t = Nan::New<v8::FunctionTemplate>(New);
     t->InstanceTemplate()->SetInternalFieldCount(1);
     t->SetClassName(Nan::New<v8::String>("HeapDiff").ToLocalChecked());
@@ -55,7 +55,7 @@ heapdiff::HeapDiff::Initialize ( v8::Local<v8::Object> target )
     Nan::SetPrototypeMethod(t, "update", Update);
     Nan::SetPrototypeMethod(t, "compare", Compare);
 
-    target->Set(Nan::New<v8::String>("HeapDiff").ToLocalChecked(), t->GetFunction());
+    target->Set(Nan::New<v8::String>("HeapDiff").ToLocalChecked(), t->GetFunction(context));
 }
 
 static int
@@ -103,7 +103,8 @@ NAN_METHOD(heapdiff::HeapDiff::New)
 
 static string handleToStr(const Local<Value> & str)
 {
-	String::Utf8Value utfString(str->ToString());
+	v8::Local<v8::Context> context = str.GetIsolate()->GetCurrentContext();
+	String::Utf8Value utfString(str->ToString(context));
 	return *utfString;
 }
 
