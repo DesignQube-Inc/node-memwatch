@@ -14,7 +14,7 @@ Node.JS code.  It provides:
 Installation
 ------------
 
-- `npm install @aidemaster/node-memwatch`
+- `npm install @ardatan/node-memwatch`
 
 Description
 -----------
@@ -27,7 +27,7 @@ instrumentation.  This module attempts to satisfy that need.
 To get started, import `node-memwatch` like so:
 
 ```javascript
-var memwatch = require('@aidemaster/node-memwatch');
+var memwatch = require('@ardatan/node-memwatch');
 ```
 
 ### Leak Detection
