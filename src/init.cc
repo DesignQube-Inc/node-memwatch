@@ -8,18 +8,19 @@
 #include "heapdiff.hh"
 #include "memwatch.hh"
 
-extern "C" {
-    void init (v8::Handle<v8::Object> target)
-    {
-        Nan::HandleScope scope;
-        heapdiff::HeapDiff::Initialize(target);
+using namespace v8;
+using namespace node;
+using namespace std;
 
-        Nan::SetMethod(target, "upon_gc", memwatch::upon_gc);
-        Nan::SetMethod(target, "gc", memwatch::trigger_gc);
+void init (Local<Object> target) {
+    Nan::HandleScope scope;
+    heapdiff::HeapDiff::Initialize(target);
 
-        Nan::AddGCPrologueCallback(memwatch::before_gc);
-        Nan::AddGCEpilogueCallback(memwatch::after_gc);
-    }
+    Nan::SetMethod(target, "upon_gc", memwatch::upon_gc);
+    Nan::SetMethod(target, "gc", memwatch::trigger_gc);
 
-    NODE_MODULE(memwatch, init);
-};
+    Nan::AddGCPrologueCallback(memwatch::before_gc);
+    Nan::AddGCEpilogueCallback(memwatch::after_gc);
+}
+
+NODE_MODULE(memwatch, init);

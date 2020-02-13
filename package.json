@@ -1,10 +1,10 @@
 {
-  "name": "@aidemaster/node-memwatch",
+  "name": "@ardatan/node-memwatch",
   "description": "Keep an eye on your memory usage, and discover and isolate leaks.",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "author": "Lloyd Hilaiel (http://lloyd.io)",
   "engines": {
-    "node": ">= 8.0"
+    "node": ">= 13.0"
   },
   "repository": {
     "type": "git",
@@ -33,8 +33,8 @@
     "Justin Matthews (@jmatthewsr-ms)"
   ],
   "dependencies": {
-    "bindings": "^1.3.0",
-    "nan": "^2.9.2"
+    "bindings": "1.5.0",
+    "nan": "2.14.0"
   },
   "publishConfig": {
     "access": "public"

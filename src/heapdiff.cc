@@ -55,7 +55,7 @@ heapdiff::HeapDiff::Initialize ( v8::Local<v8::Object> target )
     Nan::SetPrototypeMethod(t, "update", Update);
     Nan::SetPrototypeMethod(t, "compare", Compare);
 
-    target->Set(Nan::New<v8::String>("HeapDiff").ToLocalChecked(), t->GetFunction(context));
+    target->Set(context, Nan::New<v8::String>("HeapDiff").ToLocalChecked(), t->GetFunction(context).ToLocalChecked());
 }
 
 static int
@@ -103,9 +103,9 @@ NAN_METHOD(heapdiff::HeapDiff::New)
 
 static string handleToStr(const Local<Value> & str)
 {
-	v8::Local<v8::Context> context = str.GetIsolate()->GetCurrentContext();
-	String::Utf8Value utfString(str->ToString(context));
-	return *utfString;
+	Nan::Utf8String utf8_value(str);
+    std::string name(*utf8_value, utf8_value.length());
+	return name;
 }
 
 static void
@@ -239,12 +239,12 @@ static Local<Value> changesetToObject(changeset & changes)
 
     for (changeset::iterator i = changes.begin(); i != changes.end(); i++) {
         Local<Object> d = Nan::New<v8::Object>();
-        d->Set(Nan::New("what").ToLocalChecked(), Nan::New(i->first.c_str()).ToLocalChecked());
-        d->Set(Nan::New("size_bytes").ToLocalChecked(), Nan::New<v8::Number>(i->second.size));
-        d->Set(Nan::New("size").ToLocalChecked(), Nan::New(mw_util::niceSize(i->second.size).c_str()).ToLocalChecked());
-        d->Set(Nan::New("+").ToLocalChecked(), Nan::New<v8::Number>(i->second.added));
-        d->Set(Nan::New("-").ToLocalChecked(), Nan::New<v8::Number>(i->second.released));
-        a->Set(a->Length(), d);
+        d->Set(a->CreationContext(), Nan::New("what").ToLocalChecked(), Nan::New(i->first.c_str()).ToLocalChecked());
+        d->Set(a->CreationContext(), Nan::New("size_bytes").ToLocalChecked(), Nan::New<v8::Number>(i->second.size));
+        d->Set(a->CreationContext(), Nan::New("size").ToLocalChecked(), Nan::New(mw_util::niceSize(i->second.size).c_str()).ToLocalChecked());
+        d->Set(a->CreationContext(), Nan::New("+").ToLocalChecked(), Nan::New<v8::Number>(i->second.added));
+        d->Set(a->CreationContext(), Nan::New("-").ToLocalChecked(), Nan::New<v8::Number>(i->second.released));
+        a->Set(d->CreationContext(), a->Length(), d);
     }
 
     return scope.Escape(a);
@@ -260,39 +260,39 @@ compare(const v8::HeapSnapshot * before, const v8::HeapSnapshot * after)
 
     // first let's append summary information
     Local<Object> b = Nan::New<v8::Object>();
-    b->Set(Nan::New("nodes").ToLocalChecked(), Nan::New(before->GetNodesCount()));
+    b->Set(o->CreationContext(), Nan::New("nodes").ToLocalChecked(), Nan::New(before->GetNodesCount()));
     //b->Set(Nan::New("time"), s_startTime);
-    o->Set(Nan::New("before").ToLocalChecked(), b);
+    o->Set(b->CreationContext(), Nan::New("before").ToLocalChecked(), b);
 
     Local<Object> a = Nan::New<v8::Object>();
-    a->Set(Nan::New("nodes").ToLocalChecked(), Nan::New(after->GetNodesCount()));
+    a->Set(o->CreationContext(), Nan::New("nodes").ToLocalChecked(), Nan::New(after->GetNodesCount()));
     //a->Set(Nan::New("time"), time(NULL));
-    o->Set(Nan::New("after").ToLocalChecked(), a);
+    o->Set(a->CreationContext(), Nan::New("after").ToLocalChecked(), a);
 
     // now let's get allocations by name
     set<uint64_t> beforeIDs, afterIDs;
     s = 0;
     buildIDSet(&beforeIDs, before->GetRoot(), s);
-    b->Set(Nan::New("size_bytes").ToLocalChecked(), Nan::New(s));
-    b->Set(Nan::New("size").ToLocalChecked(), Nan::New(mw_util::niceSize(s).c_str()).ToLocalChecked());
+    b->Set(a->CreationContext(), Nan::New("size_bytes").ToLocalChecked(), Nan::New(s));
+    b->Set(a->CreationContext(), Nan::New("size").ToLocalChecked(), Nan::New(mw_util::niceSize(s).c_str()).ToLocalChecked());
 
     diffBytes = s;
     s = 0;
     buildIDSet(&afterIDs, after->GetRoot(), s);
-    a->Set(Nan::New("size_bytes").ToLocalChecked(), Nan::New(s));
-    a->Set(Nan::New("size").ToLocalChecked(), Nan::New(mw_util::niceSize(s).c_str()).ToLocalChecked());
+    a->Set(b->CreationContext(), Nan::New("size_bytes").ToLocalChecked(), Nan::New(s));
+    a->Set(b->CreationContext(), Nan::New("size").ToLocalChecked(), Nan::New(mw_util::niceSize(s).c_str()).ToLocalChecked());
 
     diffBytes = s - diffBytes;
 
     Local<Object> c = Nan::New<v8::Object>();
-    c->Set(Nan::New("size_bytes").ToLocalChecked(), Nan::New(diffBytes));
-    c->Set(Nan::New("size").ToLocalChecked(), Nan::New(mw_util::niceSize(diffBytes).c_str()).ToLocalChecked());
-    o->Set(Nan::New("change").ToLocalChecked(), c);
+    c->Set(o->CreationContext(), Nan::New("size_bytes").ToLocalChecked(), Nan::New(diffBytes));
+    c->Set(o->CreationContext(), Nan::New("size").ToLocalChecked(), Nan::New(mw_util::niceSize(diffBytes).c_str()).ToLocalChecked());
+    o->Set(c->CreationContext(), Nan::New("change").ToLocalChecked(), c);
 
     // before - after will reveal nodes released (memory freed)
     vector<uint64_t> changedIDs;
     setDiff(beforeIDs, afterIDs, changedIDs);
-    c->Set(Nan::New("freed_nodes").ToLocalChecked(), Nan::New<v8::Number>(changedIDs.size()));
+    c->Set(o->CreationContext(), Nan::New("freed_nodes").ToLocalChecked(), Nan::New<v8::Number>(changedIDs.size()));
 
     // here's where we'll collect all the summary information
     changeset changes;
@@ -308,14 +308,14 @@ compare(const v8::HeapSnapshot * before, const v8::HeapSnapshot * after)
     // after - before will reveal nodes added (memory allocated)
     setDiff(afterIDs, beforeIDs, changedIDs);
 
-    c->Set(Nan::New("allocated_nodes").ToLocalChecked(), Nan::New<v8::Number>(changedIDs.size()));
+    c->Set(o->CreationContext(), Nan::New("allocated_nodes").ToLocalChecked(), Nan::New<v8::Number>(changedIDs.size()));
 
     for (unsigned long i = 0; i < changedIDs.size(); i++) {
         const HeapGraphNode * n = after->GetNodeById(changedIDs[i]);
         manageChange(changes, n, true);
     }
 
-    c->Set(Nan::New("details").ToLocalChecked(), changesetToObject(changes));
+    c->Set(o->CreationContext(), Nan::New("details").ToLocalChecked(), changesetToObject(changes));
 
     return scope.Escape(o);
 }
